@@ -1,6 +1,6 @@
 [package]
 name = "org"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["m-cat <scatman@bu.edu>"]
 description = "A library for handling org-mode files."
 license = "MIT"

@@ -1,49 +1,151 @@
-//! Module for processing .org files
+//! Primary module containing outside-facing API.
 
 use std::io;
+use std::fmt;
 use util::{read_file_vec, write_file_vec};
 
-/// Org data structure
+/// Org data structure.
+#[derive(Clone, Debug)]
 pub struct Org {
+    /// The depth of the subtree.
+    /// Depth is equal to the number of asterisks in the header.
+    /// The root subtree therefore has a depth of 0.
     depth: usize,
+    /// The heading of the subtree.
+    /// This heading does not include beginning asterisks.
     heading: String,
+    /// The content of the subtree.
     content: Vec<String>,
+    /// The subtrees of the subtree.
     subtrees: Vec<Org>,
-    closed: bool,
 }
 
 impl Org {
-    /// Get the full heading for the subtree, including beginning asterisks
-    fn full_heading(&self) -> String {
+    /// Returns an empty root-level Org struct.
+    pub fn new() -> Org {
+        Org {
+            depth: 0,
+            heading: String::new(),
+            content: Vec::new(),
+            subtrees: Vec::new(),
+        }
+    }
+
+    /// Returns the depth of the subtree.
+    pub fn depth(&self) -> usize {
+        self.depth
+    }
+
+    /// Returns the heading of the subtree.
+    pub fn heading(&self) -> &str {
+        &self.heading
+    }
+
+    /// Sets the heading of the subtree.
+    pub fn set_heading(&mut self, heading: &str) {
+        self.heading = String::from(heading)
+    }
+
+    /// Gets the full heading for the subtree, including beginning asterisks.
+    pub fn full_heading(&self) -> String {
         if self.depth == 0 {
-            String::from("")
+            String::new()
         } else {
             format!("{} {}", "*".repeat(self.depth), self.heading)
         }
     }
+
+    /// Returns a reference to the content of the subtree.
+    pub fn content_as_ref(&self) -> &Vec<String> {
+        &self.content
+    }
+
+    /// Returns a mutable reference to the subtrees of the subtree.
+    pub fn content_as_mut(&mut self) -> &mut Vec<String> {
+        &mut self.content
+    }
+
+    /// Returns a reference to the subtrees of the subtree.
+    pub fn subtrees_as_ref(&self) -> &Vec<Org> {
+        &self.subtrees
+    }
+
+    /// Returns a mutable reference to the subtrees of the subtree.
+    pub fn subtrees_as_mut(&mut self) -> &mut Vec<Org> {
+        &mut self.subtrees
+    }
+
+    /// Writes an Org struct to a file.
+    pub fn write_file(&self, fname: &str) -> io::Result<()> {
+        let contents = self.write_vec();
+
+        write_file_vec(fname, &contents)
+    }
+
+    /// Writes an Org struct to a Vec of Strings.
+    pub fn write_vec(&self) -> Vec<String> {
+        let mut contents = Vec::new();
+
+        if self.depth > 0 {
+            contents.push(self.full_heading());
+        }
+
+        for line in &self.content {
+            contents.push(line.clone());
+        }
+
+        for subtree in &self.subtrees {
+            contents.append(&mut subtree.write_vec());
+        }
+
+        contents
+    }
 }
 
-/// Given a file path, return Org struct
-pub fn process_org(fname: &str) -> io::Result<Org> {
+impl Default for Org {
+    fn default() -> Org {
+        Org::new()
+    }
+}
+
+impl fmt::Display for Org {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let contents = self.write_vec();
+        let len = contents.len();
+        let mut res = String::new();
+
+        for (i, line) in contents.into_iter().enumerate() {
+            res += &line;
+
+            if i < len {
+                res += "\n";
+            }
+        }
+
+        write!(f, "{}", res)
+    }
+}
+
+/// Reads an Org struct from a given file path.
+pub fn read_org_file(fname: &str) -> io::Result<Org> {
     let file_contents: Vec<String> = match read_file_vec(fname) {
         Ok(v) => v,
         Err(e) => return Err(e),
     };
 
-    let mut org = Org {
-        depth: 0,
-        heading: String::new(),
-        content: Vec::new(),
-        subtrees: Vec::new(),
-        closed: false,
-    };
+    read_org_vec(&file_contents)
+}
 
-    process_subtree(&mut org, &file_contents, 0);
+/// Reads an Org struct from a given array slice of Strings.
+pub fn read_org_vec(contents: &[String]) -> io::Result<Org> {
+    let mut org = Default::default();
+
+    process_subtree(&mut org, contents, 0);
 
     Ok(org)
 }
 
-/// Recursively process subtrees, converting from strings to Org struct representation
+// Recursively processes subtrees, converting from strings to Org structs.
 fn process_subtree(org: &mut Org, contents: &[String], index: usize) -> usize {
     let depth = org.depth;
     let mut i = index;
@@ -66,7 +168,6 @@ fn process_subtree(org: &mut Org, contents: &[String], index: usize) -> usize {
                 heading: heading,
                 content: Vec::new(),
                 subtrees: Vec::new(),
-                closed: false,
             };
             i = process_subtree(&mut subtree, contents, i + 1);
             org.subtrees.push(subtree);
@@ -77,7 +178,7 @@ fn process_subtree(org: &mut Org, contents: &[String], index: usize) -> usize {
     i
 }
 
-/// Get the heading title and level from a line
+// Gets the heading title and level from a line.
 fn get_heading(line: &str) -> (String, usize) {
     let mut level = 0;
 
@@ -100,34 +201,11 @@ fn get_heading(line: &str) -> (String, usize) {
     (heading.trim().to_string(), level)
 }
 
-/// Write an Org struct to a file
-pub fn write_org(fname: &str, org: &Org) -> io::Result<()> {
-    let mut contents: Vec<String> = Vec::new();
-
-    write_subtree(org, &mut contents);
-
-    write_file_vec(fname, &contents)
-}
-
-/// Push an Org struct to a Vec of Strings
-fn write_subtree(org: &Org, mut contents: &mut Vec<String>) {
-    if org.depth > 0 {
-        contents.push(org.full_heading());
-    }
-
-    for line in &org.content {
-        contents.push(line.clone());
-    }
-
-    for subtree in &org.subtrees {
-        write_subtree(subtree, &mut contents);
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use org::*;
+    use org::get_heading;
 
+    // Tests `get_heading`.
     #[test]
     fn test_get_heading() {
         assert_eq!(get_heading(""), (String::from(""), 0));

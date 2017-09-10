@@ -18,9 +18,9 @@ fn test_read_write_org() {
     let fname1 = format!("{}{}", TEST_ORG_DIR, TEST_FILE_1);
     let fname2 = format!("{}{}{}", TEST_ORG_DIR, TEST_FILE_1, TEST_EXT);
 
-    let org = process_org(&fname1).unwrap();
+    let org = read_org_file(&fname1).unwrap();
 
-    write_org(&fname2, &org).unwrap();
+    org.write_file(&fname2).unwrap();
 
     // Test that when we process and write back an org file, we get the same result.
     assert!(files_equal(&fname1, &fname2).unwrap());
@@ -28,6 +28,15 @@ fn test_read_write_org() {
     fs::remove_file(fname2).unwrap();
 }
 
+// Tests the Display trait implementation for `Org`.
+#[test]
+fn test_display() {
+    let fname = format!("{}{}", TEST_ORG_DIR, TEST_FILE_1);
+    let result = read_file_str(&fname).unwrap();
+    let org = read_org_file(&fname).unwrap();
+
+    assert_eq!(result, format!("{}", org));
+}
 
 // Reads a file and returns its contents in a string.
 fn read_file_str(fname: &str) -> io::Result<String> {
