@@ -14,4 +14,4 @@
 pub mod org;
 mod util;
 
-pub use org::*;
+pub use org::Org;

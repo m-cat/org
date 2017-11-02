@@ -1,11 +1,11 @@
 //! Primary module containing outside-facing API.
 
-use std::io;
 use std::fmt;
+use std::io;
 use util::{read_file_vec, write_file_vec};
 
 /// Org data structure.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Org {
     /// The depth of the subtree.
     /// Depth is equal to the number of asterisks in the header.
@@ -29,6 +29,51 @@ impl Org {
             content: Vec::new(),
             subtrees: Vec::new(),
         }
+    }
+
+    /// Reads an Org struct from a given file path.
+    pub fn from_file(fname: &str) -> io::Result<Org> {
+        let file_contents: Vec<String> = match read_file_vec(fname) {
+            Ok(v) => v,
+            Err(e) => return Err(e),
+        };
+
+        Self::from_vec(&file_contents)
+    }
+
+    /// Reads an Org struct from `contents`.
+    pub fn from_vec(contents: &[String]) -> io::Result<Org> {
+        let mut org = Default::default();
+
+        process_subtree(&mut org, contents, 0);
+
+        Ok(org)
+    }
+
+    /// Writes an Org struct to a file.
+    pub fn to_file(&self, fname: &str) -> io::Result<()> {
+        let contents = self.to_vec();
+
+        write_file_vec(fname, &contents)
+    }
+
+    /// Writes an Org struct to a Vec of Strings.
+    pub fn to_vec(&self) -> Vec<String> {
+        let mut contents = Vec::new();
+
+        if self.depth > 0 {
+            contents.push(self.full_heading());
+        }
+
+        for line in &self.content {
+            contents.push(line.clone());
+        }
+
+        for subtree in &self.subtrees {
+            contents.append(&mut subtree.to_vec());
+        }
+
+        contents
     }
 
     /// Returns the depth of the subtree.
@@ -74,32 +119,6 @@ impl Org {
     pub fn subtrees_as_mut(&mut self) -> &mut Vec<Org> {
         &mut self.subtrees
     }
-
-    /// Writes an Org struct to a file.
-    pub fn write_file(&self, fname: &str) -> io::Result<()> {
-        let contents = self.write_vec();
-
-        write_file_vec(fname, &contents)
-    }
-
-    /// Writes an Org struct to a Vec of Strings.
-    pub fn write_vec(&self) -> Vec<String> {
-        let mut contents = Vec::new();
-
-        if self.depth > 0 {
-            contents.push(self.full_heading());
-        }
-
-        for line in &self.content {
-            contents.push(line.clone());
-        }
-
-        for subtree in &self.subtrees {
-            contents.append(&mut subtree.write_vec());
-        }
-
-        contents
-    }
 }
 
 impl Default for Org {
@@ -110,7 +129,7 @@ impl Default for Org {
 
 impl fmt::Display for Org {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let contents = self.write_vec();
+        let contents = self.to_vec();
         let len = contents.len();
         let mut res = String::new();
 
@@ -124,25 +143,6 @@ impl fmt::Display for Org {
 
         write!(f, "{}", res)
     }
-}
-
-/// Reads an Org struct from a given file path.
-pub fn read_org_file(fname: &str) -> io::Result<Org> {
-    let file_contents: Vec<String> = match read_file_vec(fname) {
-        Ok(v) => v,
-        Err(e) => return Err(e),
-    };
-
-    read_org_vec(&file_contents)
-}
-
-/// Reads an Org struct from a given array slice of Strings.
-pub fn read_org_vec(contents: &[String]) -> io::Result<Org> {
-    let mut org = Default::default();
-
-    process_subtree(&mut org, contents, 0);
-
-    Ok(org)
 }
 
 // Recursively processes subtrees, converting from strings to Org structs.

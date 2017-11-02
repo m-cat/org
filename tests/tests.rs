@@ -2,7 +2,7 @@
 
 extern crate org;
 
-use org::*;
+use org::Org;
 use std::fs;
 use std::fs::File;
 use std::io;
@@ -12,15 +12,15 @@ const TEST_ORG_DIR: &'static str = "tests/files/";
 const TEST_FILE_1: &'static str = "test1.org";
 const TEST_EXT: &'static str = ".bk";
 
-#[test]
 // Tests reading and writing org files.
+#[test]
 fn test_read_write_org() {
     let fname1 = format!("{}{}", TEST_ORG_DIR, TEST_FILE_1);
     let fname2 = format!("{}{}{}", TEST_ORG_DIR, TEST_FILE_1, TEST_EXT);
 
-    let org = read_org_file(&fname1).unwrap();
+    let org = Org::from_file(&fname1).unwrap();
 
-    org.write_file(&fname2).unwrap();
+    org.to_file(&fname2).unwrap();
 
     // Test that when we process and write back an org file, we get the same result.
     assert!(files_equal(&fname1, &fname2).unwrap());
@@ -33,7 +33,7 @@ fn test_read_write_org() {
 fn test_display() {
     let fname = format!("{}{}", TEST_ORG_DIR, TEST_FILE_1);
     let result = read_file_str(&fname).unwrap();
-    let org = read_org_file(&fname).unwrap();
+    let org = Org::from_file(&fname).unwrap();
 
     assert_eq!(result, format!("{}", org));
 }
