@@ -8,9 +8,9 @@ use std::fs::File;
 use std::io;
 use std::io::Read;
 
-const TEST_ORG_DIR: &'static str = "tests/files/";
-const TEST_FILE_1: &'static str = "test1.org";
-const TEST_EXT: &'static str = ".bk";
+const TEST_ORG_DIR: &str = "tests/files/";
+const TEST_FILE_1: &str = "test1.org";
+const TEST_EXT: &str = ".bk";
 
 // Tests reading and writing org files.
 #[test]
