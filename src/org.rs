@@ -7,16 +7,16 @@ use util::{read_file_vec, write_file_vec};
 /// Org data structure.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Org {
-    /// The depth of the subtree.
+    /// The depth of the org tree.
     /// Depth is equal to the number of asterisks in the header.
-    /// The root subtree therefore has a depth of 0.
+    /// The root tree therefore has a depth of 0.
     depth: usize,
-    /// The heading of the subtree.
+    /// The heading.
     /// This heading does not include beginning asterisks.
     heading: String,
-    /// The content of the subtree.
+    /// The content.
     content: Vec<String>,
-    /// The subtrees of the subtree.
+    /// The subtrees of the org tree.
     subtrees: Vec<Org>,
 }
 
@@ -57,7 +57,7 @@ impl Org {
         write_file_vec(fname, &contents)
     }
 
-    /// Writes an Org struct to a Vec of Strings.
+    /// Writes an Org struct to a `Vec<String>`.
     pub fn to_vec(&self) -> Vec<String> {
         let mut contents = Vec::new();
 
@@ -76,22 +76,22 @@ impl Org {
         contents
     }
 
-    /// Returns the depth of the subtree.
+    /// Returns the depth of the tree.
     pub fn depth(&self) -> usize {
         self.depth
     }
 
-    /// Returns the heading of the subtree.
+    /// Returns the heading of the tree.
     pub fn heading(&self) -> &str {
         &self.heading
     }
 
-    /// Sets the heading of the subtree.
+    /// Sets the heading of the tree.
     pub fn set_heading(&mut self, heading: &str) {
         self.heading = String::from(heading)
     }
 
-    /// Gets the full heading for the subtree, including beginning asterisks.
+    /// Gets the full heading for the tree, including beginning asterisks.
     pub fn full_heading(&self) -> String {
         if self.depth == 0 {
             String::new()
@@ -100,22 +100,22 @@ impl Org {
         }
     }
 
-    /// Returns a reference to the content of the subtree.
+    /// Returns a reference to the content of the tree.
     pub fn content_as_ref(&self) -> &Vec<String> {
         &self.content
     }
 
-    /// Returns a mutable reference to the subtrees of the subtree.
+    /// Returns a mutable reference to the content of the tree.
     pub fn content_as_mut(&mut self) -> &mut Vec<String> {
         &mut self.content
     }
 
-    /// Returns a reference to the subtrees of the subtree.
+    /// Returns a reference to the subtrees of the tree.
     pub fn subtrees_as_ref(&self) -> &Vec<Org> {
         &self.subtrees
     }
 
-    /// Returns a mutable reference to the subtrees of the subtree.
+    /// Returns a mutable reference to the subtrees of the tree.
     pub fn subtrees_as_mut(&mut self) -> &mut Vec<Org> {
         &mut self.subtrees
     }
@@ -155,17 +155,17 @@ fn process_subtree(org: &mut Org, contents: &[String], index: usize) -> usize {
         let (heading, level) = get_heading(line);
 
         if level == 0 {
-            // Found content
+            // Found content.
             org.content.push(line.clone());
             i += 1;
         } else if level <= depth {
-            // Return if new heading found at equal or lesser depth
+            // Return if new heading found at equal or lesser depth.
             return i;
         } else {
-            // Start processing a new subtree
+            // Start processing a new subtree.
             let mut subtree = Org {
                 depth: depth + 1,
-                heading: heading,
+                heading,
                 content: Vec::new(),
                 subtrees: Vec::new(),
             };
@@ -174,7 +174,7 @@ fn process_subtree(org: &mut Org, contents: &[String], index: usize) -> usize {
         }
     }
 
-    // Return the index we stopped at so the caller can continue processing at this location
+    // Return the index we stopped at so the caller can continue processing at this location.
     i
 }
 
