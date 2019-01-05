@@ -1,8 +1,8 @@
 //! Primary module containing outside-facing API.
 
+use crate::util::{read_file_vec, write_file_vec};
 use std::fmt;
 use std::io;
-use util::{read_file_vec, write_file_vec};
 
 /// Org data structure.
 #[derive(Clone, Debug, PartialEq)]
@@ -203,7 +203,7 @@ fn get_heading(line: &str) -> (String, usize) {
 
 #[cfg(test)]
 mod tests {
-    use org::get_heading;
+    use crate::org::get_heading;
 
     // Tests `get_heading`.
     #[test]
