@@ -20,12 +20,24 @@ fn test_read_write_org() {
 
     let org = Org::from_file(&fname1).unwrap();
 
-    org.to_file(&fname2).unwrap();
+    let unix_equal = {
+        org.to_file(&fname2).unwrap();
 
-    // Test that when we process and write back an org file, we get the same result.
-    assert!(files_equal(&fname1, &fname2).unwrap());
+        // Test that when we process and write back an org file, we get the same result.
+        let equal = files_equal(&fname1, &fname2).unwrap();
+        fs::remove_file(&fname2).unwrap();
+        equal
+    };
+    let win_equal = {
+        org.to_file_crlf(&fname2).unwrap();
 
-    fs::remove_file(fname2).unwrap();
+        // Test that when we process and write back an org file, we get the same result.
+        let equal = files_equal(&fname1, &fname2).unwrap();
+        fs::remove_file(&fname2).unwrap();
+        equal
+    };
+
+    assert!(unix_equal || win_equal);
 }
 
 // Tests the Display trait implementation for `Org`.
@@ -35,12 +47,13 @@ fn test_display() {
     let result = read_file_str(&fname).unwrap();
     let org = Org::from_file(&fname).unwrap();
 
-    assert_eq!(result, format!("{}", org));
+    assert_eq!(result.replace("\r\n", "\n"), format!("{}", org));
+    assert_eq!(result, org);
 }
 
 // Reads a file and returns its contents in a string.
 fn read_file_str(fname: &str) -> io::Result<String> {
-    // Open a file in read-only mode
+    // Open a file in read-only mode.
     let mut file = File::open(fname)?;
 
     let mut contents = String::new();

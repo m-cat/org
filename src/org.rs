@@ -1,8 +1,7 @@
 //! Primary module containing outside-facing API.
 
-use crate::util::{read_file_vec, write_file_vec};
-use std::fmt;
-use std::io;
+use crate::util;
+use std::{fmt, io};
 
 /// Org data structure.
 #[derive(Clone, Debug, PartialEq)]
@@ -33,7 +32,7 @@ impl Org {
 
     /// Reads an Org struct from a given file path.
     pub fn from_file(fname: &str) -> io::Result<Org> {
-        let file_contents: Vec<String> = match read_file_vec(fname) {
+        let file_contents: Vec<String> = match util::read_file_vec(fname) {
             Ok(v) => v,
             Err(e) => return Err(e),
         };
@@ -54,7 +53,13 @@ impl Org {
     pub fn to_file(&self, fname: &str) -> io::Result<()> {
         let contents = self.to_vec();
 
-        write_file_vec(fname, &contents)
+        util::write_file_vec(fname, &contents, b"\n")
+    }
+
+    /// Writes an Org struct to a file using carriage returns with a line feed (CRLF).
+    pub fn to_file_crlf(&self, fname: &str) -> io::Result<()> {
+        let contents = self.to_vec();
+        util::write_file_vec(fname, &contents, b"\r\n")
     }
 
     /// Writes an Org struct to a `Vec<String>`.
@@ -130,18 +135,38 @@ impl Default for Org {
 impl fmt::Display for Org {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let contents = self.to_vec();
-        let len = contents.len();
         let mut res = String::new();
 
-        for (i, line) in contents.into_iter().enumerate() {
+        for line in contents.into_iter() {
             res += &line;
-
-            if i < len {
-                res += "\n";
-            }
+            res += "\n";
         }
 
         write!(f, "{}", res)
+    }
+}
+
+impl<'a> PartialEq<&'a str> for Org {
+    fn eq(&self, other: &&str) -> bool {
+        other.replace("\r\n", "\n") == format!("{}", self)
+    }
+}
+
+impl<'a> PartialEq<Org> for &'a str {
+    fn eq(&self, other: &Org) -> bool {
+        self.replace("\r\n", "\n") == format!("{}", other)
+    }
+}
+
+impl PartialEq<String> for Org {
+    fn eq(&self, other: &String) -> bool {
+        other.as_str() == *self
+    }
+}
+
+impl PartialEq<Org> for String {
+    fn eq(&self, other: &Org) -> bool {
+        self.as_str() == *other
     }
 }
 

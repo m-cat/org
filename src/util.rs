@@ -24,15 +24,14 @@ pub fn read_file_vec(fname: &str) -> io::Result<Vec<String>> {
 }
 
 /// Writes a `contents` to a file with a given path.
-pub fn write_file_vec(fname: &str, contents: &[String]) -> io::Result<()> {
+pub fn write_file_vec(fname: &str, contents: &[String], line_ending: &[u8]) -> io::Result<()> {
     // Open a file in write-only mode, returns `io::Result<File>`
     let mut file = File::create(&fname)?;
-    let newline = b"\n";
 
     // Write each string to `file`, returns `io::Result<()>`
     for line in contents {
         file.write_all(line.as_bytes())?;
-        file.write_all(newline)?;
+        file.write_all(line_ending)?;
     }
 
     Ok(())
